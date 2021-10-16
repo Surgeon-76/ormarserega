@@ -1,0 +1,41 @@
+version: '3'
+
+services:
+  data_db:
+    restart: always
+    image: "postgres:13.4-alpine"
+    restart: always
+    volumes:
+        - ./data_db/:/var/lib/postgresql/data/
+    environment:
+        - POSTGRES_USER=gleb
+        - POSTGRES_PASSWORD=gleb1
+        - POSTGRES_DB=seregadb
+    ports:
+        - "5439:5432"
+
+
+  serega_api:
+    restart: always
+    build: ./api
+    command: uvicorn main:app --reload --workers 1 --host 0.0.0.0 --port 8080
+    ports:
+      - 8080:8080
+
+    depends_on: 
+      - data_db
+    volumes:
+      - ./api:/apps/serega
+
+
+  nginx:
+    image: nginx:1.17
+    restart: unless-stopped
+    volumes:
+      - ./data/nginx:/etc/nginx/conf.d
+    depends_on:
+      - serega_api
+    ports:
+      - "8000:8000"
+      - "80:80"
+      - "443:443"
